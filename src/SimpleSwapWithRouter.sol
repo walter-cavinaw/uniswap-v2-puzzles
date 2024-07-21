@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "./interfaces/IUniswapV2Pair.sol";
+import "./interfaces/IERC20.sol";
 
 contract SimpleSwapWithRouter {
     /**
@@ -18,7 +19,18 @@ contract SimpleSwapWithRouter {
     }
 
     function performSwapWithRouter(address[] calldata path, uint256 deadline) public {
-        // your code start here
+        // get the amount of ETH in the contract
+        uint256 ethAmount = address(this).balance;
+
+        // approve the router to transfer all the tokens along the path?
+        
+        // swap ETH for USDC
+        IUniswapV2Router(router).swapExactETHForTokens{value: ethAmount}(
+            0, // amountOutMin
+            path,
+            address(this),
+            deadline
+        );
     }
 
     receive() external payable {}

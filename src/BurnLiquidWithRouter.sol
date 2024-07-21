@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
+import "./interfaces/IUniswapV2Pair.sol";
 import "./interfaces/IERC20.sol";
 
 contract BurnLiquidWithRouter {
@@ -19,7 +20,25 @@ contract BurnLiquidWithRouter {
     }
 
     function burnLiquidityWithRouter(address pool, address usdc, address weth, uint256 deadline) public {
-        // your code start here
+        IUniswapV2Pair pair = IUniswapV2Pair(pool);
+
+        // get the balance of the contract for UNI-V2-LP tokens
+        uint256 balance = IERC20(address(pair)).balanceOf(address(this));
+
+        // approve the router to transfer the tokens
+        IERC20(address(pair)).approve(router, balance);
+
+        // remove liquidity from the pool
+        IUniswapV2Router(router).removeLiquidity(
+            usdc,
+            weth,
+            balance,
+            0, // amountAMin
+            0, // amountBMin
+            address(this),
+            deadline
+        );
+
     }
 }
 

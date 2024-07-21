@@ -19,6 +19,20 @@ contract BurnLiquid {
          *
          *     to: recipient address to receive tokenA and tokenB.
          */
-        // your code here
+        IUniswapV2Pair pair = IUniswapV2Pair(pool);
+
+        // get the balance of the contract for UNI-V2-LP tokens
+        uint256 balance = IERC20(address(pair)).balanceOf(address(this));
+        
+        // approve the pair contract to transfer the tokens
+        IERC20(address(pair)).approve(address(this), balance);
+
+        // transfer UNI-V2-LP tokens to the pair contract
+        IERC20(address(pair)).transferFrom(address(this), address(pair), balance);
+
+        // call the burn function in the pair contract
+        pair.burn(address(this));
+
+
     }
 }

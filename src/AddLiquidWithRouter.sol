@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import "./interfaces/IUniswapV2Pair.sol";
+import "./interfaces/IERC20.sol";
 
 contract AddLiquidWithRouter {
     /**
@@ -19,7 +19,22 @@ contract AddLiquidWithRouter {
     }
 
     function addLiquidityWithRouter(address usdcAddress, uint256 deadline) public {
-        // your code start here
+        // get the amount of USDC and ETH in the contract
+        uint256 usdcAmount = IERC20(usdcAddress).balanceOf(address(this));
+        uint256 ethAmount = address(this).balance;
+
+        // approve the router to transfer the tokens
+        IERC20(usdcAddress).approve(router, usdcAmount);
+
+        // add liquidity to the pool
+        IUniswapV2Router(router).addLiquidityETH{value: ethAmount}(
+            usdcAddress,
+            usdcAmount,
+            0, // amountTokenMin
+            0, // amountETHMin
+            msg.sender,
+            deadline
+        );
     }
 
     receive() external payable {}

@@ -13,6 +13,8 @@ contract SimpleSwap {
      *  from USDC/WETH pool.
      *
      */
+    uint256 public constant TRADING_FEE_BPS = 30;
+
     function performSwap(address pool, address weth, address usdc) public {
         /**
          *     swap(uint256 amount0Out, uint256 amount1Out, address to, bytes calldata data);
@@ -23,6 +25,27 @@ contract SimpleSwap {
          *     data: leave it empty.
          */
 
-        // your code start here
+        IUniswapV2Pair pair = IUniswapV2Pair(pool);
+        (uint112 reserve0, uint112 reserve1, ) = pair.getReserves();
+
+        uint256 amount0Out = 100;
+        uint256 amount1In = amount0Out > 0 ? getAmountIn(amount0Out, reserve1, reserve0) : 0;
+
+        IERC20(weth).approve(address(pair), amount1In);
+        IERC20(weth).transfer(address(pair), amount1In);
+        pair.swap(amount0Out, 0, address(this), "");
+    }
+
+    // given an output amount of an asset and pair reserves, returns a required input amount of the other asset
+    function getAmountIn(uint256 amountOut, uint256 reserveIn, uint256 reserveOut)
+        internal
+        pure
+        returns (uint256 amountIn)
+    {
+        require(amountOut > 0, "UniswapReplica: INSUFFICIENT_REQUESTED_AMOUNT");
+        require(reserveIn > 0 && reserveOut > 0, "UniswapReplica: INSUFFICIENT_LIQUIDITY");
+        uint256 numerator = reserveIn * amountOut * 10_000;
+        uint256 denominator = (reserveOut - amountOut) * (10_000 - TRADING_FEE_BPS);
+        amountIn = (numerator / denominator) + 1;
     }
 }
