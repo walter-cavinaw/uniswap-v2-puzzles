@@ -13,7 +13,9 @@ contract Sync {
      *
      */
     function performSync(address pool) public {
-        // your code start here
+        IUniswapV2Pair pool = IUniswapV2Pair(pool);
+
+        pool.sync();
     }
 }
 
@@ -29,6 +31,8 @@ contract Skim {
      *
      */
     function performSkim(address pool) public {
-        // your code start here
+        IUniswapV2Pair pool = IUniswapV2Pair(pool);
+
+        pool.skim(address(this));
     }
 }

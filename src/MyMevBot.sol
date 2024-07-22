@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "./interfaces/IERC20.sol";
+import "forge-std/console.sol";
 
 /**
  *
@@ -29,13 +30,50 @@ contract MyMevBot {
     }
 
     function performArbitrage() public {
-        // your code here
+        // turn flashLenderPool into a UniswapV3Pool
+        IUniswapV3Pool univ3Pool = IUniswapV3Pool(flashLenderPool);
+
+        // borrow more than 1000 USDC
+        uint256 borrowAmount = 1001 * 1e6;
+        univ3Pool.flash(address(this), borrowAmount, 0, abi.encode("arbitrage"));
+
+        // check the usdc balance is more than 0
+        require(IERC20(usdc).balanceOf(address(this)) > 0, "Arbitrage failed");
     }
 
     function uniswapV3FlashCallback(uint256 _fee0, uint256, bytes calldata data) external {
         callMeCallMe();
 
-        // your code start here
+        uint256 flashLoanBalance = IERC20(usdc).balanceOf(address(this));
+
+        // we have borrowed USDC, now we can swap it
+        address[] memory path = new address[](4);
+        path[0] = usdc;
+        path[1] = weth;
+        path[2] = usdt;
+        path[3] = usdc;
+
+        // approve the router to spend USDC, WETH and USDT
+        IERC20(usdc).approve(router, type(uint256).max);
+        IERC20(weth).approve(router, type(uint256).max);
+        IERC20(usdt).approve(router, type(uint256).max);
+
+        // swap USDC for USDT, through WETH, then back to USDC
+        IUniswapV2Router(router).swapExactTokensForTokens(
+            flashLoanBalance,
+            0,
+            path,
+            address(this),
+            block.timestamp+60 // deadline = now + 60 seconds
+        );
+
+        // repay the loan and fee
+        IERC20(usdc).transfer(flashLenderPool, flashLoanBalance+_fee0);
+
+        // close the approvals
+        IERC20(usdc).approve(router, 0);
+        IERC20(weth).approve(router, 0);
+        IERC20(usdt).approve(router, 0);
     }
 
     function callMeCallMe() private {

@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import "./interfaces/IUniswapV2Pair.sol";
 import "./interfaces/IERC20.sol";
+import "forge-std/console.sol";
 
 contract ExactSwap {
     /**
@@ -13,6 +14,8 @@ contract ExactSwap {
      *  from USDC/WETH pool.
      *
      */
+    uint256 public constant TRADING_FEE_BPS = 30;
+
     function performExactSwap(address pool, address weth, address usdc) public {
         /**
          *     swap(uint256 amount0Out, uint256 amount1Out, address to, bytes calldata data);
@@ -23,6 +26,27 @@ contract ExactSwap {
          *     data: leave it empty.
          */
 
-        // your code start here
+        IUniswapV2Pair pool = IUniswapV2Pair(pool);
+
+        // determine how much WETH to swap for 1337 USDC
+        uint256 amount0Out = 1337 * 10 ** IERC20(usdc).decimals();
+        (uint112 reserve0, uint112 reserve1, ) = pool.getReserves();
+        uint256 amount1In = amount0Out > 0 ? getAmountIn(amount0Out, reserve1, reserve0) : 0;
+
+        IERC20(weth).approve(address(pool), amount1In);
+        IERC20(weth).transfer(address(pool), amount1In);
+        pool.swap(amount0Out, 0, address(this), "");
+    }
+
+    function getAmountIn(uint256 amountOut, uint256 reserveIn, uint256 reserveOut)
+        internal
+        pure
+        returns (uint256 amountIn)
+    {
+        require(amountOut > 0, "UniswapReplica: INSUFFICIENT_REQUESTED_AMOUNT");
+        require(reserveIn > 0 && reserveOut > 0, "UniswapReplica: INSUFFICIENT_LIQUIDITY");
+        uint256 numerator = reserveIn * amountOut * 10_000;
+        uint256 denominator = (reserveOut - amountOut) * (10_000 - TRADING_FEE_BPS);
+        amountIn = (numerator / denominator) + 1;
     }
 }
