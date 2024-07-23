@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "./interfaces/IERC20.sol";
+import "forge-std/console.sol";
 
 contract ExactSwapWithRouter {
     /**
@@ -18,7 +19,25 @@ contract ExactSwapWithRouter {
     }
 
     function performExactSwapWithRouter(address weth, address usdc, uint256 deadline) public {
-        // your code start here
+        address[] memory path = new address[](2);
+        path[0] = weth;
+        path[1] = usdc;
+
+        uint256 amountOutMin = 1337 * (10 ** IERC20(usdc).decimals());
+
+        uint256 amountInExact = IUniswapV2Router(router).getAmountsIn(amountOutMin, path)[0];
+                // approve the router to transfer all the tokens along the path
+        IERC20(weth).approve(router, amountInExact);
+
+        IUniswapV2Router(router).swapExactTokensForTokens(
+            amountInExact,
+            amountOutMin,
+            path,
+            address(this),
+            deadline
+        );
+
+        IERC20(weth).approve(router, 0);
     }
 }
 
@@ -37,4 +56,6 @@ interface IUniswapV2Router {
         address to,
         uint256 deadline
     ) external returns (uint256[] memory amounts);
+
+    function getAmountsIn(uint amountOut, address[] memory path) external view returns (uint[] memory amounts);
 }
